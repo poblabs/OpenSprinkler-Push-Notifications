@@ -15,25 +15,25 @@ device.
 
 1. Sign up for Instapush at www.instapush.im
 2. Create a new App on Instapush's website with these settings:
-    a. Title: message
-	b. Tracker: message
-	c. Push message: {message}
+  1. Title: `message`
+  2. Tracker: `message`
+  3. Push message: `{message}`
 3. Click Basic Info on your newly created app and save the Application ID and the Application Secret.
 4. Install the Instapush app on your device. The app is basic and is only needed to receive the push notification. 
 5. Copy the ospi_push_notifications.py file to /home/pi
-6. chmod 755 /home/pi/ospi_push_notifications.py
+6. `chmod 755 /home/pi/ospi_push_notifications.py`
 7. Edit ospi_push_notifications.py and update these items:
-   a. Your From Email
-   b. Your To Email
-   c. Your Instapush App ID 
-   d. Your Instapush App Secret
-   e. Your OpenSprinkler API password in hashed format. For example, if your password is "hello", the hash is 5d41402abc4b2a76b9719d911017c592
-8. You can run "sudo python /home/pi/ospi_push_notifications.py" and manually start a station to see if you get a push notification. 
-9. Stop running the script if you're happy, and install it as a "service"
+  1. Your From Email
+  2. Your To Email
+  3. Your Instapush App ID 
+  4. Your Instapush App Secret
+  5. Your OpenSprinkler API password in hashed format. For example, if your password is "hello", the hash is 5d41402abc4b2a76b9719d911017c592
+8. You can run `sudo python /home/pi/ospi_push_notifications.py` and manually start a station to see if you get a push notification. 
+9. Stop running the script if you're happy, and install it as a service.
 10. Copy the service script ospi-notifications to /etc/init.d
-11. sudo chmod +x /etc/init.d/ospi-notifications
-12. To start the script on startups and reboots, run sudo update-rc.d ospi_notifications defaults
-13. To start the service, sudo service ospi-notifications start
+11. `sudo chmod +x /etc/init.d/ospi-notifications`
+12. To start the script on startups and reboots, run `sudo update-rc.d ospi_notifications defaults`
+13. To start the service, `sudo service ospi-notifications start`
 14. Run a zone manually to see if you get a push notification. 
 	
 ### DEBUG INFO
