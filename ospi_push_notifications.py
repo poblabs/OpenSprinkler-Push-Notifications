@@ -2,7 +2,13 @@
 
 """ This script will check the OpenSprinkler API every 5 seconds and look for running stations.
     If a station is found running, it'll send a push notification through Instapush. It will only
-	send a push notification once per zone, and only at start-up of the zone. """
+	send a push notification once per zone, and only at start-up of the zone.
+	
+	If the script crashes, it should send an email to let you know it's crashed. 
+	
+	6/26/2015, Pat O'Brien. Licensed under the MIT License. 
+	
+	"""
 
 import urllib2, json
 import smtplib
@@ -11,22 +17,32 @@ from email.mime.text import MIMEText
 import requests
 from time import sleep
 
+# Configure these variables
+ospiApiPasswordHex = "YOUR_OSPi_PASSWORD_IN_HEX"
+instapushAppID = "YOUR_INSTAPUSH_APP_ID"
+instapushAppSecret = "YOUR_INSTAPUSH_APP_SECRET"
+
+# Email setup. This is used if the script crashes.
+fromEmail = "YOUR@FROM_EMAIL"
+toEmail = ['YOUR@TO_EMAIL']
+smtpServer = "localhost"
+subject = "OSPi Push Notification Script Failure"
+text = "The OSPi push notification script has crashed, or stopped. You should investigate this and restart it.\n\nssh to your OSPi and check /home/pi/ospi_push_notifications.py"
+
+
+#########################################################
+#
+# Don't need to edit anything below, unless you want to. 
+#
+#########################################################
 notifyZone = 0
 notifySent = ""
 
 def sendEmail():
-	smtpServer = "localhost"
-	fromEmail = "from@youremail"
-	toEmail = ['to@youremail']
-	subject = "OSPI Push Notification Script Failure"
 	msg = MIMEMultipart('alternative')
 	msg['Subject'] = subject
 	msg['From'] = fromEmail
 	msg['To'] = ", ".join(toEmail)
-
-	# Create the plain-text body of the message. 
-	text = "The OSPI push notification script has crashed, or stopped. You should investigate this and restart it.\n\nssh to 192.168.0.60 and check /home/pi/ospi_push_notifications.py"
-		
 	part1 = MIMEText(text, 'plain')
 	msg.attach(part1)
 	s = smtplib.SMTP(smtpServer)
@@ -35,7 +51,7 @@ def sendEmail():
 
 def getStatus():
 	try:
-		ospiStationStatus = urllib2.urlopen("http://localhost:8080/js?pw=<your API hex password>").read()
+		ospiStationStatus = urllib2.urlopen("http://localhost:8080/js?pw=" + ospiApiPasswordHex).read()
 	except:
 		sendEmail()
 	
@@ -52,8 +68,8 @@ def sendPushNotification(zoneID):
 	#Send push notification to Instapush
 	event = "Zone %s is now active" % zoneID
 	headers = {'Content-Type': 'application/json',
-					'x-instapush-appid': "YOUR_INSTAPUSH_APPID",
-					'x-instapush-appsecret': "YOUR_INSTAPUSH_APPSECRET"}
+					'x-instapush-appid': instapushAppID,
+					'x-instapush-appsecret': instapushAppSecret}
 	payload = '{"event":"message","trackers":{"message":"' + event + '"}}'
 				   
 	ret = requests.post('http://api.instapush.im/post',
