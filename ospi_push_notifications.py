@@ -4,20 +4,19 @@
     If a station is found running, it'll send a push notification through Instapush. It will only
 	send a push notification once per zone, and only at start-up of the zone.
 	
-	If the script crashes, it should send an email to let you know it's crashed. 
+	If the script crashes, it can send an email to let you know it's crashed. 
 	
 	6/26/2015, Pat O'Brien. Licensed under the MIT License. 
 	
 	"""
 
-import urllib2, json
+import urllib2, json, requests
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import requests
 from time import sleep
 
-# Configure these variables
+# Configure these variables.
 ospiApiPasswordHex = "YOUR_OSPi_PASSWORD_IN_HEX"
 instapushAppID = "YOUR_INSTAPUSH_APP_ID"
 instapushAppSecret = "YOUR_INSTAPUSH_APP_SECRET"
@@ -36,7 +35,7 @@ text = "The OSPi push notification script has crashed, or stopped. You should in
 #
 #########################################################
 notifyZone = 0
-notifySent = ""
+notifySent = "n"
 
 def sendEmail():
 	msg = MIMEMultipart('alternative')
@@ -86,8 +85,8 @@ while True:
 	stations = getStatus()
 	
 	i = 1
-	for zone in stations:
-		if (zone == 1):
+	for zoneStatus in stations:
+		if (zoneStatus == 1):
 			#print "Zone %s is active" % i
 			if ( (notifyZone == i) & (notifySent == "y") ):
 				#print "Push notification already sent"
