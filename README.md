@@ -47,7 +47,9 @@ device.
 	
 # DEBUG INFO
 
-If for some reason things aren't working, you can check the init.d script's log file,
+First, you will need the Python requests library. Install it via `sudo easy_install requests`
+
+Then, if for some reason things aren't working, you can check the init.d script's log file,
 located at /var/log/ospi-notifications. This could give you some insight on what's wrong. 
 Otherwise check the permissions on the /etc/init.d/ospi-notifications script as well as
 the /home/pi/ospi_push_notifications.py script. 
