@@ -6,7 +6,8 @@
 	
 	If the script crashes, it can send an email to let you know it's crashed. 
 	
-	6/26/2015, Pat O'Brien. Licensed under the MIT License. 
+	6/26/2015, Pat O'Brien. Licensed under the MIT License.
+	6/30/2015, added Pushover as a push notification service.
 	
 	"""
 
@@ -18,8 +19,17 @@ from time import sleep
 
 # Configure these variables.
 ospiApiPasswordHex = "YOUR_OSPi_PASSWORD_IN_HEX"
-instapushAppID = "YOUR_INSTAPUSH_APP_ID"
-instapushAppSecret = "YOUR_INSTAPUSH_APP_SECRET"
+
+# Select your push notification service. Options are "pushover" or "instapush"
+pushService = "instapush"
+
+# Instapush settings
+instapushAppID = "INSTAPUSH_APP_ID"
+instapushAppSecret = "INSTAPUSH_APP_SECRET"
+
+# Pushover settings
+pushoverUserKey = "PUSHOVER_USER_KEY"
+pushoverAppToken = "PUSH_OVER_APP_TOKEN"
 
 # Email setup. This is used if the script crashes.
 fromEmail = "YOUR@FROM_EMAIL"
@@ -64,18 +74,28 @@ def getStatus():
 	return stations
 
 def sendPushNotification(zoneID):
-	#Send push notification to Instapush
+	#Send push notifications
 	event = "Zone %s is now active" % zoneID
-	headers = {'Content-Type': 'application/json',
-					'x-instapush-appid': instapushAppID,
-					'x-instapush-appsecret': instapushAppSecret}
-	payload = '{"event":"message","trackers":{"message":"' + event + '"}}'
-				   
-	ret = requests.post('http://api.instapush.im/post',
-					headers = headers,
-					data = payload)
 	
-	#print ret
+	if (pushService == "instapush"):
+		headers = {'Content-Type': 'application/json',
+						'x-instapush-appid': instapushAppID,
+						'x-instapush-appsecret': instapushAppSecret}
+		payload = '{"event":"message","trackers":{"message":"' + event + '"}}'
+					   
+		ret = requests.post('http://api.instapush.im/post',
+						headers = headers,
+						data = payload)
+		#print ret
+	
+	elif (pushService == "pushover"):
+		payload = {
+                "token": pushoverAppToken,
+                "user" : pushoverUserKey,
+                "message": event }
+		ret = requests.post("http://api.pushover.net/1/messages.json", data = payload)
+		
+		#print ret
 	
 
 # Main loop to check the station status and send notification if necessary
@@ -95,7 +115,7 @@ while True:
 				sendPushNotification(i)
 				notifyZone = i
 				notifySent = "y"
-				#print "Sending push notification"
+				#print "Sending push notification to %s" % pushService
 				
 		#else:
 		#	print "No zones running."
