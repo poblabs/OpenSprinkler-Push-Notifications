@@ -18,7 +18,10 @@ from email.mime.text import MIMEText
 from time import sleep
 
 # Configure these variables.
-ospiApiPasswordHex = "YOUR_OSPi_PASSWORD_IN_HEX"
+
+# You can use this site to convert your plaintext password to hash: http://www.miraclesalad.com/webtools/md5.php
+# For example, "hello" converts to 5d41402abc4b2a76b9719d911017c592. You would enter 5d41402abc4b2a76b9719d911017c592 below
+ospiApiPasswordHash = "YOUR_OSPi_PASSWORD_IN_HASH" 
 
 # Select your push notification service. Options are "pushover" or "instapush"
 pushService = "instapush"
@@ -60,7 +63,7 @@ def sendEmail():
 
 def getStatus():
 	try:
-		ospiStationStatus = urllib2.urlopen("http://localhost:8080/js?pw=" + ospiApiPasswordHex).read()
+		ospiStationStatus = urllib2.urlopen("http://localhost:8080/js?pw=" + ospiApiPasswordHash).read()
 	except:
 		sendEmail()
 	
