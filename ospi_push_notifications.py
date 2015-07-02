@@ -24,6 +24,9 @@ from time import sleep
 # For example, "hello" converts to 5d41402abc4b2a76b9719d911017c592. You would enter 5d41402abc4b2a76b9719d911017c592 below
 ospiApiPasswordHash = "YOUR_OSPi_PASSWORD_IN_HASH" 
 
+# What port does your OSPi run on? Default for OSPi is 8080, standard HTTP is 80
+ospiPort = "8080"
+
 # Select your push notification service. Options are "pushover" or "instapush"
 pushService = "instapush"
 
@@ -65,7 +68,7 @@ def sendEmail():
 
 def getRainSensorStatus():
 	try:
-		ospiRainSensorStatus = urllib2.urlopen("http://localhost:8080/jc?pw=" + ospiApiPasswordHash).read()
+		ospiRainSensorStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/jc?pw=" + ospiApiPasswordHash).read()
 	except:
 		sendEmail()
 	
@@ -80,7 +83,7 @@ def getRainSensorStatus():
 
 def getStatus():
 	try:
-		ospiStationStatus = urllib2.urlopen("http://localhost:8080/js?pw=" + ospiApiPasswordHash).read()
+		ospiStationStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/js?pw=" + ospiApiPasswordHash).read()
 	except:
 		sendEmail()
 	
