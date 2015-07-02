@@ -8,6 +8,7 @@
 	
 	6/26/2015, Pat O'Brien. Licensed under the MIT License.
 	6/30/2015, added Pushover as a push notification service.
+	7/2/2015, added rain sensor notifications
 	
 	"""
 
@@ -49,6 +50,7 @@ text = "The OSPi push notification script has crashed, or stopped. You should in
 #########################################################
 notifyZone = 0
 notifySent = "n"
+currentRainStatus = 0
 
 def sendEmail():
 	msg = MIMEMultipart('alternative')
@@ -60,6 +62,21 @@ def sendEmail():
 	s = smtplib.SMTP(smtpServer)
 	s.sendmail(fromEmail, toEmail, msg.as_string())
 	s.quit()
+
+def getRainSensorStatus():
+	try:
+		ospiRainSensorStatus = urllib2.urlopen("http://localhost:8080/jc?pw=" + ospiApiPasswordHash).read()
+	except:
+		sendEmail()
+	
+	try:
+		data = json.loads(ospiRainSensorStatus)
+	except:
+		sendEmail()
+		
+	rainSensor = data["rs"]
+	return rainSensor
+
 
 def getStatus():
 	try:
@@ -76,9 +93,17 @@ def getStatus():
 	#print "Getting sprinkler status. Zones defined: %s. Zone data: %s" % (data["nstations"],data["sn"])
 	return stations
 
-def sendPushNotification(zoneID):
-	#Send push notifications
-	event = "Zone %s is now active" % zoneID
+def sendPushNotification(type, zoneID):
+	# Set push notification text based on type of event
+	if (type == "station_active"):
+		event = "Zone %s is now active" % zoneID
+		
+	elif (type == "rainSensor_active"):
+		event = "Rain sensor has detected rain"
+	
+	elif (type == "rainSensor_clear"):
+		event = "Rain sensor has cleared"
+	
 	
 	if (pushService == "instapush"):
 		headers = {'Content-Type': 'application/json',
@@ -99,14 +124,28 @@ def sendPushNotification(zoneID):
 		ret = requests.post("http://api.pushover.net/1/messages.json", data = payload)
 		
 		#print ret
-	
+		
 
 # Main loop to check the station status and send notification if necessary
 while True:
 	
-	# Get the station status from the controller API
+	# Get the station & rain status from the controller API
+	rainSensor = getRainSensorStatus()
 	stations = getStatus()
 	
+	# Rain sensor status
+	if (rainSensor == 1): # Rain sensor active
+		if (currentRainStatus == 0): # Still showing no rain, send notification and set rain detected
+			currentRainStatus = 1
+			sendPushNotification("rainSensor_active", 0)
+			
+	elif (rainSensor == 0): # Rain sensor not active
+		if (currentRainStatus == 1): # Still showing rain. Send an all clear notification and clear the rain detected
+			currentRainStatus = 0
+			sendPushNotification("rainSensor_clear", 0)
+
+	
+	# Station zone status
 	i = 1
 	for zoneStatus in stations:
 		if (zoneStatus == 1):
@@ -115,16 +154,11 @@ while True:
 				#print "Push notification already sent"
 				tempVar = "blah"
 			else:
-				sendPushNotification(i)
+				sendPushNotification("station_active", i)
 				notifyZone = i
 				notifySent = "y"
 				#print "Sending push notification to %s" % pushService
 				
-		#else:
-		#	print "No zones running."
-
 		i = i + 1
 	
-	#print ""
 	sleep(5)
-
