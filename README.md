@@ -43,7 +43,7 @@ sensor has been activated and send a notification for that event as well.
 9. To start the script on startups and reboots, run `sudo update-rc.d ospi_notifications defaults`
 10. To manually start the service, `sudo service ospi-notifications start`
   1. Other commands you can run are `sudo service ospi-notifications stop | restart | status`
-11. Run a zone manually from your phone or the OpenSprinkler web page to see if you get a push notification. 
+11. Now that the script is running as a background service, run a zone manually from your phone or the OpenSprinkler web page to see if you get a push notification. 
 	
 # DEBUG INFO
 
