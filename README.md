@@ -36,8 +36,8 @@ sensor has been activated and send a notification for that event as well.
 4. Edit config.yaml and update the items located within.
   1. Special Note: Your OSPi API password needs to be MD5 hashed. You can use this site to convert your plain-text password to hash: http://www.miraclesalad.com/webtools/md5.php
     1. For example, "hello" converts to 5d41402abc4b2a76b9719d911017c592. You would enter `"5d41402abc4b2a76b9719d911017c592"` into the `config.yaml`
-5. You can run `sudo python /home/pi/ospi_push_notifications.py` and manually start a station to see if you get a push notification. 
-6. Stop running the script if you're happy, and continue to install it as a service so it'll run on reboots.
+5. You can run `sudo python /home/pi/ospi_push_notifications.py` and manually start a station from OpenSprinkler's web page to see if you get a push notification. 
+6. Stop running the script by pressing `CTRL+C` if you receive a notification, and continue to install it as a service so it'll run on reboots.
 7. Copy the service script `ospi-notifications` to `/etc/init.d`
 8. `sudo chmod +x /etc/init.d/ospi-notifications`
 9. To start the script on startups and reboots, run `sudo update-rc.d ospi_notifications defaults`
