@@ -1,6 +1,14 @@
 ospi:
   password: "YOUR_OSPI_PASSWORD" # Needs to be hashed. View README for help
   port: "8080"
+stations: # Station activity notifications for start and stop. Valid options are "yes" or "no"
+  start: "yes"
+  stop: "yes"
+rain: # Rain sensor notifications for active or cleared. Valid options are "yes" or "no"
+  active: "yes"
+  cleared: "yes"
+waterlevel: # Water level notifications? Valid options are "yes" or "no"
+  notify: "yes"
 push:
   service: "instapush" # Acceptable options are "instapush" or "pushover"
   instapush:
