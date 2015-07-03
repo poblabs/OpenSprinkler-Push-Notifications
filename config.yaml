@@ -1,0 +1,17 @@
+ospi:
+  password: "YOUR_OSPI_PASSWORD" # Needs to be hashed. View README for help
+  port: "8080"
+push:
+  service: "instapush" # Acceptable options are "instapush" or "pushover"
+  instapush:
+    appID: "YOUR_INSTAPUSH_APPID"
+    appSecret: "YOUR_INSTAPUSH_APPSECRET"
+  pushover:
+    userKey: "YOUR_PUSHOVER_USERKEY"
+    appToken: "YOUR_PUSHOVER_APPTOKEN"
+email:
+  from: "you@yourdomain.com"
+  to: "you@yourdomain.com"
+  server: "localhost"
+  subject: "OSPi Push Notification Script Failure"
+  text: "The OSPi push notification script has crashed, or stopped. You should investigate this and restart it.\n\nssh to your OSPi and check for errors with the script."

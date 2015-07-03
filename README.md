@@ -4,10 +4,10 @@ OpenSprinkler Push Notifications
 (c) drsprite <drsprite@github.com> - http://github.com/drsprite
 Please read LICENSE for licensing info
 
-This is a simple Python script that will check the OpenSprinkler API
+This is a Python script that will check the <a href="http://opensprinkler.com" target="_blank">OpenSprinkler</a> API
 for running sprinkler zones (or stations). If a station is running, it
-will use the Instapush service to send a push notification to your
-device. 
+will send you a push notification. It also will check to see if the rain
+sensor has been activated and send a notification for that event as well. 
 
 <img src="http://i.imgur.com/ho8C1qtl.png">
 
@@ -27,31 +27,31 @@ device.
 2. Create a new app called OpenSprinkler
 3. Install the app on your device to receive push notifications. 
 
-### Script configuration:
-1. First, make sure you have the Python requests library. Install it via `sudo easy_install requests`
-2. Copy the ospi_push_notifications.py file to /home/pi
+## Script configuration:
+1. First, make sure you have the required Python libraries. 
+  1. Requests: `sudo easy_install requests`
+  2. PyYAML: `sude easy_install pyyaml`
+2. Copy the `ospi_push_notifications.py` and `config.yaml` files to `/home/pi`
 3. `chmod 755 /home/pi/ospi_push_notifications.py`
-4. Edit ospi_push_notifications.py and update these items:
-  1. Your push notification service. Options are "instapush" or "pushover"
-  2. Your push service App ID or token
-  3. Your push service App Secret or user token
-  4. Your From Email
-  5. Your To Email
-  6. Your OpenSprinkler API password in hashed format. For example, if your password is "hello", the hash is 5d41402abc4b2a76b9719d911017c592
+4. Edit config.yaml and update the items located within.
+  1. Special Note: Your OSPi API password needs to be MD5 hashed. You can use this site to convert your plain-text password to hash: http://www.miraclesalad.com/webtools/md5.php
+    1. For example, "hello" converts to 5d41402abc4b2a76b9719d911017c592. You would enter `"5d41402abc4b2a76b9719d911017c592"` into the `config.yaml`
 5. You can run `sudo python /home/pi/ospi_push_notifications.py` and manually start a station to see if you get a push notification. 
-6. Stop running the script if you're happy, and install it as a service.
-7. Copy the service script ospi-notifications to /etc/init.d
+6. Stop running the script if you're happy, and continue to install it as a service so it'll run on reboots.
+7. Copy the service script `ospi-notifications` to `/etc/init.d`
 8. `sudo chmod +x /etc/init.d/ospi-notifications`
 9. To start the script on startups and reboots, run `sudo update-rc.d ospi_notifications defaults`
-10. To start the service, `sudo service ospi-notifications start`
-11. Run a zone manually to see if you get a push notification. 
+10. To manually start the service, `sudo service ospi-notifications start`
+  1. Other commands you can run are `sudo service ospi-notifications stop | restart | status`
+11. Run a zone manually from your phone or the OpenSprinkler web page to see if you get a push notification. 
 	
 # DEBUG INFO
 
-First, make sure you have the Python requests library. Install it via `sudo easy_install requests`
+First, make sure you have the required Python libraries. See Script Configuration above. 
 
-Then, if for some reason things aren't working, you can check the init.d script's log file,
-located at /var/log/ospi-notifications. This could give you some insight on what's wrong. 
-Otherwise check the permissions on the /etc/init.d/ospi-notifications script as well as
-the /home/pi/ospi_push_notifications.py script. 
+Then, if for some reason things aren't working, you can check your syslog. Typically this is at `/var/log/messages`. 
+Depending on where the script failed, this should provide some information. Lastly, you can check the init.d log
+for the notifications script located at /var/log/ospi-notifications. 
+
+Otherwise check the permissions on the /etc/init.d/ospi-notifications script as well as the /home/pi/ospi_push_notifications.py script. 
 
