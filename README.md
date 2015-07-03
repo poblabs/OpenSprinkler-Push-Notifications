@@ -51,7 +51,7 @@ First, make sure you have the required Python libraries. See Script Configuratio
 
 Then, if for some reason things aren't working, you can check your syslog. Typically this is at `/var/log/messages`. 
 Depending on where the script failed, this should provide some information. Lastly, you can check the init.d log
-for the notifications script located at /var/log/ospi-notifications. 
+for the notifications script located at `/var/log/ospi-notifications`. 
 
-Otherwise check the permissions on the /etc/init.d/ospi-notifications script as well as the /home/pi/ospi_push_notifications.py script. 
+Otherwise check the permissions on the `/etc/init.d/ospi-notifications` script as well as the `/home/pi/ospi_push_notifications.py` script. 
 
