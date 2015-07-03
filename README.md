@@ -24,7 +24,7 @@ sensor has been activated and send a notification for that event as well.
 
 ### Support for Pushover:
 1. Sign up for Pushover at http://pushover.net
-2. Create a new app called OpenSprinkler
+2. Create a new app called `OpenSprinkler` (or whatever you'd like it to be called)
 3. Install the app on your device to receive push notifications. 
 
 ## Script configuration:
