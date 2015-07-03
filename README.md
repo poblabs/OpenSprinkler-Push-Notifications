@@ -30,7 +30,7 @@ sensor has been activated and send a notification for that event as well.
 ## Script configuration:
 1. First, make sure you have the required Python libraries. 
   1. Requests: `sudo easy_install requests`
-  2. PyYAML: `sude easy_install pyyaml`
+  2. PyYAML: `sudo easy_install pyyaml`
 2. Copy the `ospi_push_notifications.py` and `config.yaml` files to `/home/pi`
 3. `chmod 755 /home/pi/ospi_push_notifications.py`
 4. Edit config.yaml and update the items located within.
