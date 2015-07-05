@@ -9,7 +9,7 @@ for running sprinkler zones (or stations). If a station is running, it
 will send you a push notification. It also will check to see if the rain
 sensor has been activated and send a notification for that event as well. 
 
-<img src="http://i.imgur.com/ho8C1qtl.png">
+<img src="http://i.imgur.com/SABNQpOl.png">
 
 # INSTALLATION
 
@@ -37,6 +37,9 @@ sensor has been activated and send a notification for that event as well.
   1. Special Note: Your OSPi API password needs to be MD5 hashed. You can create this on the command line. SSH and log into the Pi. Then run:
     1. `echo -n hello | md5sum`.
     2. For example, "hello" is your OpenSprinkler password and it converts to 5d41402abc4b2a76b9719d911017c592. You would enter `"5d41402abc4b2a76b9719d911017c592"` into the `config.yaml`
+  2. Also, if the config file has `{}` for a notification message, this is what will be used for the dynamic value for that notification. 
+    1. For example, `start: "Zone {} is now active"`, will send the notification `"Zone 1 is now active"`. 
+	2. You must keep the `{}` present in that notification message for the dynamic info to be sent through notification. 
 5. You can run `sudo python /home/pi/ospi_push_notifications.py` and manually start a station from OpenSprinkler's web page to see if you get a push notification. 
 6. Stop running the script by pressing `CTRL+C` if you receive a notification, and continue to install it as a service so it'll run on reboots.
 7. Copy the service script `ospi-notifications` to `/etc/init.d`
