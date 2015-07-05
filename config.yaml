@@ -2,13 +2,20 @@ ospi:
   password: "YOUR_OSPI_PASSWORD" # Needs to be hashed. View README for help
   port: "8080"
 stations: # Station activity notifications for start and stop. Valid options are "yes" or "no"
-  start: "yes"
-  stop: "yes"
+  notify:
+    start: "yes"
+    stop: "yes"
+  messages: # Use {} as the place where the zone number will be displayed
+    start: "Zone {} is now active"
+    stop: "Zone {} is now idle" 
 rain: # Rain sensor notifications for active or cleared. Valid options are "yes" or "no"
-  active: "yes"
-  cleared: "yes"
+  notify: "yes"
+  messages:
+    active: "Rain sensor has detected rain"
+    clear: "Rain sensor has cleared"
 waterlevel: # Water level notifications? Valid options are "yes" or "no"
   notify: "yes"
+  message: "The water level is now {}%"
 push:
   service: "instapush" # Acceptable options are "instapush" or "pushover"
   instapush:
