@@ -29,4 +29,4 @@ email:
   to: "you@yourdomain.com"
   server: "localhost"
   subject: "OSPi Push Notification Script Failure"
-  text: "The OSPi push notification script has crashed, or stopped. You should investigate this and restart it.\n\nssh to your OSPi and check for errors with the script."
+  text: "The OSPi push notification script has crashed, or stopped. You should investigate this and restart it.\n\nssh to your OSPi and check /var/log/messages for errors with the script."
