@@ -162,9 +162,9 @@ def sendPushNotification(notifyType, notifyInfo):
 		
 	elif (pushService == "ifttt"):
 		url = "http://maker.ifttt.com/trigger/" + iftttEventName + "/with/key/" + iftttUserKey
-		payload = {'value1': event }
+		payload = { 'value1': event }
 		ret = requests.post(url, data = payload)
-		syslog.syslog("Notification sent to %s. Message: %s. Return message %s" % (pushService,event,ret))
+		syslog.syslog("Notification sent to %s. Message: %s. Return message %s" % (pushService, event, ret))
 		#print ret
 		
 
