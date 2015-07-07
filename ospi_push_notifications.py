@@ -15,9 +15,12 @@
 				Re-wrote the entire station notification to be able to notify when the station has turned off.
 				Added more options to the config file, such as individual notify on/off and also
 					the ability to customize individual notification messages. 
-				Added water level notification.
+				Added water level notification. 
+					Thanks Joe! (https://opensprinkler.com/forums/users/jchiar/)
 				Added more verbose logging. 
 				Lastly, re-organized the functions and main loop code.
+	7/6/2016, Added IFTTT Maker channel https://ifttt.com/maker as push notification service. 
+				Thanks nystrom! (https://opensprinkler.com/forums/users/nystrom/)
 	"""
 
 import os, syslog, urllib2, json, requests, yaml
@@ -54,6 +57,8 @@ instapushAppID = config["push"]["instapush"]["appID"]
 instapushAppSecret = config["push"]["instapush"]["appSecret"]
 pushoverUserKey = config["push"]["pushover"]["userKey"]
 pushoverAppToken = config["push"]["pushover"]["appToken"]
+iftttEventName = config["push"]["ifttt"]["eventName"]
+iftttUserKey = config["push"]["ifttt"]["userKey"]
 fromEmail = config["email"]["from"]
 toEmail = config["email"]["to"]
 smtpServer = config["email"]["server"]
@@ -153,6 +158,13 @@ def sendPushNotification(notifyType, notifyInfo):
                 "message": event }
 		ret = requests.post("http://api.pushover.net/1/messages.json", data = payload)
 		syslog.syslog("Notification sent to %s. Message: %s. Return message: %s" % (pushService, event, ret))
+		#print ret
+		
+	elif (pushService == "ifttt"):
+		url = "http://maker.ifttt.com/trigger/" + iftttEventName + "/with/key/" + iftttUserKey
+		payload = {'value1': event }
+		ret = requests.post(url, data = payload)
+		syslog.syslog("Notification sent to %s. Message: %s. Return message %s" % (pushService,event,ret))
 		#print ret
 		
 

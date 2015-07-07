@@ -27,6 +27,20 @@ sensor has been activated and send a notification for that event as well.
 2. Create a new app called `OpenSprinkler` (or whatever you'd like it to be called)
 3. Install the app on your device to receive push notifications. 
 
+### Support for IFTTT Maker channel:
+1. Create your maker channel and get your secret key. https://ifttt.com/maker
+2. Add the secret key, and your event name to the `config.yaml`. I chose my event name to be `OpenSprinkler`
+3. Create a new recipe with the following info (you can tailor it to suite your needs, but for simple push notifications):
+  1. Trigger channel: Maker
+    1. Receive a web request
+	2. Event name: OpenSprinkler
+  2. That: 
+    1. This is where you can say "iOS Notification" or "Android Notification" or "Email" or "SMS". Whatever you'd like to do.
+  3. Complete the action field and create the recipe. 
+    1. For the Notification field, I simply chose `{{EventName}}: {{Value1}}`.
+	2. An example that this would display: `OpenSprinkler: Zone 1 is now active.`
+	
+
 ## Script configuration:
 1. First, make sure you have the required Python libraries. 
   1. Requests: `sudo easy_install requests`

@@ -24,6 +24,9 @@ push:
   pushover:
     userKey: "YOUR_PUSHOVER_USERKEY"
     appToken: "YOUR_PUSHOVER_APPTOKEN"
+  ifttt:
+    eventName: "YOUR_IFTTT_EVENT_NAME"
+    userKey: "YOUR_IFTTT_USER_KEY"
 email:
   from: "you@yourdomain.com"
   to: "you@yourdomain.com"
