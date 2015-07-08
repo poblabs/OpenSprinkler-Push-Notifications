@@ -6,8 +6,8 @@ stations: # Station activity notifications for start and stop. Valid options are
     start: "yes"
     stop: "yes"
   messages: # Use {} as the place where the zone number will be displayed
-    start: "Zone {} is now active"
-    stop: "Zone {} is now idle" 
+    start: "{} is now active"
+    stop: "{} is now idle" 
 rain: # Rain sensor notifications for active or cleared. Valid options are "yes" or "no"
   notify: "yes"
   messages:

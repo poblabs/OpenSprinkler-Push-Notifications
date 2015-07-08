@@ -21,6 +21,7 @@
 				Lastly, re-organized the functions and main loop code.
 	7/6/2016, Added IFTTT Maker channel https://ifttt.com/maker as push notification service. 
 				Thanks nystrom! (https://opensprinkler.com/forums/users/nystrom/)
+	7/8/2016, Updated the notifications to use the station name from the API as opposed to a static "Zone #"
 	"""
 
 import os, syslog, urllib2, json, requests, yaml
@@ -83,6 +84,25 @@ def getStationStatus():
 	#print "Getting sprinkler status. Zones defined: %s. Zone data: %s" % (data["nstations"],data["sn"])
 	return stations
 
+# Get the name of the station
+def getStationName(id):
+	try:
+		ospiStationName = urllib2.urlopen("http://localhost:" + ospiPort + "/jn?pw=" + ospiApiPasswordHash).read()
+	except:
+		syslog.syslog("Unable to load the OSPi API URL for Station Names & Attributes. You might have a bad hashed password or the OSPi is not online.")
+		sendEmail()
+	
+	try:
+		data = json.loads(ospiStationName)
+	except:
+		syslog.syslog("Unable to parse OSPi Station Names & Attributes JSON Output.")
+		sendEmail()
+	
+	# The list of stations starts at 0. We need to subtract 1 to get the right ID in the list
+	id = id - 1
+	stationName = data["snames"][id]
+	return stationName
+
 # Get Rain Sensor status
 def getRainSensorStatus():
 	try:
@@ -122,12 +142,12 @@ def getWaterLevel():
 def sendPushNotification(notifyType, notifyInfo):
 	# Change verbiage based on event type
 	if (notifyType == "station_active"):
-		#event = "Zone %s is now active" % notifyInfo
-		event = config["stations"]["messages"]["start"].format(notifyInfo)
+		stationName = getStationName(notifyInfo)
+		event = config["stations"]["messages"]["start"].format(stationName)
 		
 	elif (notifyType == "station_idle"):
-		#event = "Zone %s is now idle" % notifyInfo
-		event = config["stations"]["messages"]["stop"].format(notifyInfo)
+		stationName = getStationName(notifyInfo)
+		event = config["stations"]["messages"]["stop"].format(stationName)
 		
 	elif (notifyType == "rainSensor_active"):
 		event = config["rain"]["messages"]["active"]
