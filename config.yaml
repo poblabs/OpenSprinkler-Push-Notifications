@@ -5,7 +5,7 @@ stations: # Station activity notifications for start and stop. Valid options are
   notify:
     start: "yes"
     stop: "yes"
-  messages: # Use {} as the place where the zone number will be displayed
+  messages: # Use {} as the place where the station name will be displayed
     start: "{} is now active"
     stop: "{} is now idle" 
 rain: # Rain sensor notifications for active or cleared. Valid options are "yes" or "no"
@@ -17,7 +17,7 @@ waterlevel: # Water level notifications? Valid options are "yes" or "no"
   notify: "yes"
   message: "The water level is now {}%"
 push:
-  service: "instapush" # Acceptable options are "instapush" or "pushover"
+  service: "instapush" # Acceptable options are "instapush" or "pushover" or "ifttt"
   instapush:
     appID: "YOUR_INSTAPUSH_APPID"
     appSecret: "YOUR_INSTAPUSH_APPSECRET"
@@ -32,4 +32,4 @@ email:
   to: "you@yourdomain.com"
   server: "localhost"
   subject: "OSPi Push Notification Script Failure"
-  text: "The OSPi push notification script has crashed, or stopped. You should investigate this and restart it.\n\nssh to your OSPi and check /var/log/messages for errors with the script."
+  text: "The OSPi push notification script has crashed, or stopped. The error reported was: {}"

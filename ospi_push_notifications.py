@@ -22,6 +22,8 @@
 	7/6/2016, Added IFTTT Maker channel https://ifttt.com/maker as push notification service. 
 				Thanks nystrom! (https://opensprinkler.com/forums/users/nystrom/)
 	7/8/2016, Updated the notifications to use the station name from the API as opposed to a static "Zone #"
+				Fixed rain sensor notifications. If the sensor option is disabled, do not check for the status
+				Updated sendEmail() to include the message that is logged to syslog
 	"""
 
 import os, syslog, urllib2, json, requests, yaml
@@ -30,16 +32,19 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from time import sleep
 
-def sendEmail():
+def sendEmail(message):
 	msg = MIMEMultipart('alternative')
 	msg['Subject'] = subject
 	msg['From'] = fromEmail
 	msg['To'] = toEmail
-	part1 = MIMEText(text, 'plain')
+	body = text.format(message)
+	part1 = MIMEText(body, 'plain')
 	msg.attach(part1)
 	s = smtplib.SMTP(smtpServer)
 	s.sendmail(fromEmail, toEmail, msg.as_string())
 	s.quit()
+	syslog.syslog("Email sent to %s. Exiting script due to error." % toEmail)
+	exit() # Exit Python since we have encountered an error. Added this in due to multiple emails being sent.
 
 	
 # Load config file
@@ -64,21 +69,23 @@ fromEmail = config["email"]["from"]
 toEmail = config["email"]["to"]
 smtpServer = config["email"]["server"]
 subject = config["email"]["subject"]
-text = config["email"]["subject"]
+text = config["email"]["text"]
 
 # Get Station Status
 def getStationStatus():
 	try:
 		ospiStationStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/js?pw=" + ospiApiPasswordHash).read()
 	except:
-		syslog.syslog("Unable to load the OSPi API URL for Station Status. You might have a bad hashed password or the OSPi is not online.")
-		sendEmail()
+		error = "Unable to load the OSPi API URL for Station Status. You might have a bad hashed password or the OSPi is not online."
+		syslog.syslog(error)
+		sendEmail(error)
 	
 	try:
 		data = json.loads(ospiStationStatus)
 	except:
-		syslog.syslog("Unable to parse OSPi Station Status JSON Output.")
-		sendEmail()
+		error = "Unable to parse OSPi Station Status JSON Output."
+		syslog.syslog(error)
+		sendEmail(error)
 		
 	stations = data["sn"]
 	#print "Getting sprinkler status. Zones defined: %s. Zone data: %s" % (data["nstations"],data["sn"])
@@ -89,14 +96,16 @@ def getStationName(id):
 	try:
 		ospiStationName = urllib2.urlopen("http://localhost:" + ospiPort + "/jn?pw=" + ospiApiPasswordHash).read()
 	except:
-		syslog.syslog("Unable to load the OSPi API URL for Station Names & Attributes. You might have a bad hashed password or the OSPi is not online.")
-		sendEmail()
+		error = "Unable to load the OSPi API URL for Station Names & Attributes. You might have a bad hashed password or the OSPi is not online."
+		syslog.syslog(error)
+		sendEmail(error)
 	
 	try:
 		data = json.loads(ospiStationName)
 	except:
-		syslog.syslog("Unable to parse OSPi Station Names & Attributes JSON Output.")
-		sendEmail()
+		error = "Unable to parse OSPi Station Names & Attributes JSON Output."
+		syslog.syslog(error)
+		sendEmail(error)
 	
 	# The list of stations starts at 0. We need to subtract 1 to get the right ID in the list
 	id = id - 1
@@ -105,34 +114,50 @@ def getStationName(id):
 
 # Get Rain Sensor status
 def getRainSensorStatus():
+	# Is the rain sensor enabled?
 	try:
-		ospiRainSensorStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/jc?pw=" + ospiApiPasswordHash).read()
+		ospiRainSensorEnabled = urllib2.urlopen("http://localhost:" + ospiPort + "/jo?pw=" + ospiApiPasswordHash).read()
+		enabled = json.loads(ospiRainSensorEnabled)
 	except:
-		syslog.syslog("Unable to load the OSPi API URL for Rain Sensor Status. You might have a bad hashed password or the OSPi is not online.")
-		sendEmail()
-	
-	try:
-		data = json.loads(ospiRainSensorStatus)
-	except:
-		syslog.syslog("Unable to parse OSPi Rain Sensor Status JSON Output.")
-		sendEmail()
+		error = "Unable to load the OSPi API URL for Options. You might have a bad hashed password or the OSPi is not online."
+		syslog.syslog(error)
+		sendEmail(error)
 		
-	rainSensor = data["rs"]
-	return rainSensor
+	if ( enabled["urs"] == 1):
+		# Get the rain status
+		try:
+			ospiRainSensorStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/jc?pw=" + ospiApiPasswordHash).read()
+		except:
+			error = "Unable to load the OSPi API URL for Rain Sensor Status. You might have a bad hashed password or the OSPi is not online."
+			syslog.syslog(error)
+			sendEmail(error)
+		
+		try:
+			data = json.loads(ospiRainSensorStatus)
+		except:
+			error = "Unable to parse OSPi Rain Sensor Status JSON Output."
+			syslog.syslog(error)
+			sendEmail(error)
+			
+		rainSensor = data["rs"]
+		return rainSensor
+	
 
 # Get the watering level
 def getWaterLevel():
 	try:
 		ospiWaterLevel = urllib2.urlopen("http://localhost:" + ospiPort + "/jo?pw=" + ospiApiPasswordHash).read()
 	except:
-		syslog.syslog("Unable to load the OSPi API URL for Water Level. You might have a bad hashed password or the OSPi is not online.")
-		sendEmail()
+		error = "Unable to load the OSPi API URL for Water Level. You might have a bad hashed password or the OSPi is not online."
+		syslog.syslog(error)
+		sendEmail(error)
 	
 	try:
 		data = json.loads(ospiWaterLevel)
 	except:
-		syslog.syslog("Unable to parse OSPi Water Level JSON Output.")
-		sendEmail()
+		error = "Unable to parse OSPi Water Level JSON Output."
+		syslog.syslog(error)
+		sendEmail(error)
 
 	waterLevel = data["wl"]
 	#print "Water level currently is %s%%" % waterLevel
