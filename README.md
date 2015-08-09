@@ -1,7 +1,7 @@
 OpenSprinkler Push Notifications
 =============
 
-(c) drsprite <drsprite@github.com> - http://github.com/drsprite
+(c) Pat O'Brien <poblabs@github.com> - http://github.com/poblabs
 Please read LICENSE for licensing info
 
 This is a Python script that will check the <a href="http://opensprinkler.com" target="_blank">OpenSprinkler</a> API
