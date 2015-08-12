@@ -30,6 +30,8 @@ push:
 email:
   from: "you@yourdomain.com"
   to: "you@yourdomain.com"
-  server: "localhost"
   subject: "OSPi Push Notification Script Failure"
   text: "The OSPi push notification script has crashed, or stopped. The error reported was: {}"
+  server: "localhost" # Valid options are "localhost" or "gmail". Using GMail will reduce the email being flagged as spam
+  gmailUsername: "YOUR_GMAIL_USERNAME"
+  gmailPassword: "YOUR_GMAIL_PASSWORD"

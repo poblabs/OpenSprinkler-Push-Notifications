@@ -33,16 +33,29 @@ from email.mime.text import MIMEText
 from time import sleep
 
 def sendEmail(message):
-	msg = MIMEMultipart('alternative')
-	msg['Subject'] = subject
-	msg['From'] = fromEmail
-	msg['To'] = toEmail
 	body = text.format(message)
-	part1 = MIMEText(body, 'plain')
-	msg.attach(part1)
-	s = smtplib.SMTP(smtpServer)
-	s.sendmail(fromEmail, toEmail, msg.as_string())
-	s.quit()
+	msg = "\r\n".join([
+		"From: " + fromEmail,
+		"To: " + toEmail,
+		"Subject: " + subject,
+		"",
+		body
+	])
+
+	if (smtpServer == "gmail"):
+		username = config["email"]["gmailUsername"]
+		password = config["email"]["gmailPassword"]
+		server = smtplib.SMTP('smtp.gmail.com:587')
+		server.ehlo()
+		server.starttls()
+		server.login(username,password)
+		server.sendmail(fromEmail, toEmail, msg)
+		server.quit()
+	elif (smtpServer == "localhost"):
+		s = smtplib.SMTP("localhost")
+		s.sendmail(fromEmail, toEmail, msg)
+		s.quit()
+		
 	syslog.syslog("Email sent to %s. Exiting script due to error." % toEmail)
 	exit() # Exit Python since we have encountered an error. Added this in due to multiple emails being sent.
 
