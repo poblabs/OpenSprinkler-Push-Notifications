@@ -19,11 +19,19 @@
 					Thanks Joe! (https://opensprinkler.com/forums/users/jchiar/)
 				Added more verbose logging. 
 				Lastly, re-organized the functions and main loop code.
-	7/6/2016, Added IFTTT Maker channel https://ifttt.com/maker as push notification service. 
+	7/6/2015, Added IFTTT Maker channel https://ifttt.com/maker as push notification service. 
 				Thanks nystrom! (https://opensprinkler.com/forums/users/nystrom/)
-	7/8/2016, Updated the notifications to use the station name from the API as opposed to a static "Zone #"
+	7/8/2015, Updated the notifications to use the station name from the API as opposed to a static "Zone #"
 				Fixed rain sensor notifications. If the sensor option is disabled, do not check for the status
 				Updated sendEmail() to include the message that is logged to syslog
+
+	8/12/2015, KDB - Added the following:
+				- Support for Program start and end notifications
+				- Moved functionality checks to individual objects. Easier to follow and minor 
+				  efficiency gains. 
+				- Added generic "message" as default for the notification routine. 
+				- can now specify pushover "sound" in the config file.
+				- Added some comments and error handling output to help with debugging...etc.
 	"""
 
 import os, syslog, urllib2, json, requests, yaml
@@ -31,6 +39,10 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from time import sleep
+
+# How long to sleep for each iteration of the run loop
+POLL_SLEEP = 10
+
 
 def sendEmail(message):
 	body = text.format(message)
@@ -76,6 +88,11 @@ instapushAppID = config["push"]["instapush"]["appID"]
 instapushAppSecret = config["push"]["instapush"]["appSecret"]
 pushoverUserKey = config["push"]["pushover"]["userKey"]
 pushoverAppToken = config["push"]["pushover"]["appToken"]
+#KDB make sure sound is there for pushover, just in case an old config file is being used.
+if "sound" in config["push"]["pushover"]:
+	pushoverSound = config["push"]["pushover"]["sound"]
+else:
+	pushoverSound = "pushover"
 iftttEventName = config["push"]["ifttt"]["eventName"]
 iftttUserKey = config["push"]["ifttt"]["userKey"]
 fromEmail = config["email"]["from"]
@@ -84,6 +101,63 @@ smtpServer = config["email"]["server"]
 subject = config["email"]["subject"]
 text = config["email"]["text"]
 
+#-----------------------------------------------------------------------------
+# KDB - Check program Status
+# return True if a program is running, false if it is not
+
+def getProgramStatus():
+	try:
+		ospiProgramStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/jc?pw=" + ospiApiPasswordHash).read()
+	except:
+		error = "Unable to load the OSPi API URL for Program Status You might have a bad hashed password or the OSPi is not online."
+		syslog.syslog(error)
+		sendEmail(error)
+	
+	try:
+		data = json.loads(ospiProgramStatus)
+	except:
+		error = "Unable to parse OSPi Program Status JSON Output."
+		syslog.syslog(error)
+		sendEmail(error)
+
+	# Loop over the PS fields - if the first element is not 0, we have a program running (something is queued up )
+	for station in data['ps']:
+		if station[0] != 0:
+			return station[0]
+
+	return 0
+#-----------------------------------------------------------------------------
+# Get the program Name -- hacked this from the OpenSprinkler GUI javascript
+def getProgramName(pid):
+
+	if pid == 255 or pid == 99:
+		return "Manual"
+	elif pid == 254 or pid == 98:
+		return "Run-Once"
+	else:
+		# get the available programs from the system
+		try:
+			progsData = urllib2.urlopen("http://localhost:" + ospiPort + "/jp?pw=" + ospiApiPasswordHash).read()
+		except:
+			error = "Unable to load the OSPi API URL for Program Names."
+			syslog.syslog(error)
+			sendEmail(error)
+			return "Uknown"
+		
+		try:
+			progs = json.loads(progsData)
+		except:
+			error = "Unable to parse OSPi Program Data JSON Output."
+			syslog.syslog(error)
+			sendEmail(error)
+			return "Uknown"
+
+		if pid <= len(progs['pd']):
+			return str(progs['pd'][pid-1][5])
+		else:
+			return "Unknown"
+
+#-----------------------------------------------------------------------------
 # Get Station Status
 def getStationStatus():
 	try:
@@ -195,7 +269,8 @@ def sendPushNotification(notifyType, notifyInfo):
 		
 	elif (notifyType == "waterLevel"):
 		event = config["waterlevel"]["message"].format(notifyInfo)
-	
+	else:
+		event = notifyType  # just use the notify type - for simple messaging
 	
 	if (pushService == "instapush"):
 		headers = {'Content-Type': 'application/json',
@@ -213,6 +288,7 @@ def sendPushNotification(notifyType, notifyInfo):
 		payload = {
                 "token": pushoverAppToken,
                 "user" : pushoverUserKey,
+                "sound": pushoverSound,
                 "message": event }
 		ret = requests.post("http://api.pushover.net/1/messages.json", data = payload)
 		syslog.syslog("Notification sent to %s. Message: %s. Return message: %s" % (pushService, event, ret))
@@ -225,69 +301,194 @@ def sendPushNotification(notifyType, notifyInfo):
 		syslog.syslog("Notification sent to %s. Message: %s. Return message %s" % (pushService, event, ret))
 		#print ret
 		
+#----------------------------------------------------
+# KDB - define a base class for our status check activities
 
+class Status(object):
+
+	def __init__(self, config):
+		object.__init__(self)
+		return
+
+	# STATIC Method used to determine if this check is enabled. This is used to populate
+	# the active checks list in the run loop
+	@staticmethod
+	def isEnabled(config):
+		return False 
+
+	# method that performs the check. 
+	def check(self):
+		pass
+
+#----------------------------------------------------
+# Per station status check logic
+class stationStatus(Status):
+
+	def __init__(self, config):
+
+		Status.__init__(self,  config)
+
+		self.notifyStart = config["stations"]["notify"]["start"] == "yes"
+		self.notifyStop = config["stations"]["notify"]["stop"] == "yes"		
+		self.currentStation = 0
+
+	@staticmethod
+	def isEnabled(config):
+		return (config["stations"]["notify"]["start"] == "yes" or config["stations"]["notify"]["stop"] == "yes")
+
+	def check(self):
+		stations = getStationStatus()
+		i = 1
+		for zoneStatus in stations:
+			if (zoneStatus == 1):
+				if (self.currentStation != i):
+
+					# Zone change detected. Send notification that previous zone stopped, except if previous zone was 0
+					if ( (self.currentStation != 0) & self.notifyStop):
+						syslog.syslog("Station has gone idle: %s" % self.currentStation)
+						sendPushNotification("station_idle", self.currentStation)
+					
+					self.currentStation = i
+					# New zone is active, send notification
+					if (self.notifyStart):
+						syslog.syslog("Station is now active: %s" % i)
+						sendPushNotification("station_active", i)
+
+			elif ( (zoneStatus == 0) & (self.currentStation == i) ):
+				# All stations off, including a previously-on station. Send idle notification, and reset station to 0
+				if (self.currentStation != 0) & (self.notifyStop ):
+					syslog.syslog("Station has gone idle: %s" % self.currentStation)
+					sendPushNotification("station_idle", self.currentStation)
+					self.currentStation = 0
+					
+			i = i + 1
+
+#----------------------------------------------------
+# per Program status check logic
+class programStatus(Status):
+
+	def __init__(self, config):
+
+		Status.__init__(self,  config)
+
+		self.notifyStart = config["programs"]["notify"]["start"] == "yes"
+		self.notifyStop = config["programs"]["notify"]["stop"] == "yes"		
+		self.currentProgramName = "Unknown"
+		self.bProgramRunning = False
+
+	@staticmethod
+	def isEnabled(config):
+		return (config["programs"]["notify"]["start"] == "yes" or config["programs"]["notify"]["stop"] == "yes")
+
+	def check(self):
+		pid = getProgramStatus()
+		bStatus = pid != 0
+		# change of program state?
+		if bStatus != self.bProgramRunning:
+			if bStatus and self.notifyStart:
+				self.currentProgramName = getProgramName(pid)
+				txt = "Started " + self.currentProgramName + " Program"
+				syslog.syslog(txt)
+				sendPushNotification(txt, None)
+			elif not bStatus and  self.notifyStop:
+				txt = "Ending " + self.currentProgramName + " Program"
+				syslog.syslog(txt)
+				sendPushNotification(txt, None)		
+				self.currentProgramName = "Unknown"			
+
+			self.bProgramRunning = bStatus
+
+#----------------------------------------------------
+# Rain sensor status check logic
+class rainSensorStatus(Status):
+
+	def __init__(self, config):
+
+		Status.__init__(self,  config)
+
+		self.notify = config["rain"]["notify"] == "yes"
+		self.currentRainStatus = 0
+
+	@staticmethod
+	def isEnabled(config):
+		return (config["rain"]["notify"] == "yes")
+
+	def check(self):
+		rainSensor = getRainSensorStatus()
+		if rainSensor == self.currentRainStatus:
+			return  # No change
+
+		# Do we have rain now?
+		if (rainSensor == 1):
+			syslog.syslog("Rain sensor is now active")
+			sendPushNotification("rainSensor_active", 0)
+		else:
+			# No rain now
+			syslog.syslog("Rain sensor has cleared")
+			sendPushNotification("rainSensor_clear", 0)
+
+		self.currentRainStatus = rainSensor
+
+#----------------------------------------------------
+# Water Level status check logic
+
+class waterLevelStatus(Status):
+
+	def __init__(self, config):
+
+		Status.__init__(self,  config)
+
+		self.notify = config["waterlevel"]["notify"] == "yes"
+		self.currentWaterLevel = 0
+
+	@staticmethod
+	def isEnabled(config):
+		return (config["waterlevel"]["notify"] == "yes")
+
+	def check(self):
+		waterLevel = getWaterLevel()
+		if (self.currentWaterLevel != waterLevel):
+			# New water level detected
+			self.currentWaterLevel = waterLevel
+			syslog.syslog("Water level has changed to: %s" % self.waterLevel)
+			sendPushNotification("waterLevel", self.waterLevel)
+
+#----------------------------------------------------
 # Main loop to check the status and send notification if necessary	
 def main():
 	syslog.syslog('OSPi push notification script started.')
-	currentStation = 0
-	currentRainStatus = 0
-	currentWaterLevel = 0
 	
+	# What checks do we need to make in the processing loop?
+	statusChecks = []
+	if stationStatus.isEnabled(config):
+		statusChecks.append(stationStatus(config))
+
+	if programStatus.isEnabled(config):
+		statusChecks.append(programStatus(config))
+
+	if rainSensorStatus.isEnabled(config):
+		statusChecks.append(rainSensorStatus(config))
+
+	if waterLevelStatus.isEnabled(config):
+		statusChecks.append(waterLevelStatus(config))
+
+	# if we have no checks, bail
+	if len(statusChecks) == 0:
+		syslog.syslog("No status checks specified in the config file. Exiting.")
+		return
+
+	# Start the run loop
 	try:
 		while True:
-		
-			# Station zone status
-			stations = getStationStatus()
-			i = 1
-			for zoneStatus in stations:
-				if (zoneStatus == 1):
-					if (currentStation != i):
-						# Zone change detected. Send notification that previous zone stopped, except if previous zone was 0
-						if ( (currentStation != 0) & (config["stations"]["notify"]["stop"] == "yes") ):
-							syslog.syslog("Station has gone idle: %s" % currentStation)
-							sendPushNotification("station_idle", currentStation)
-						currentStation = i
-						# New zone is active, send notification
-						if (config["stations"]["notify"]["start"] == "yes"):
-							syslog.syslog("Station is now active: %s" % i)
-							sendPushNotification("station_active", i)
 
-				elif ( (zoneStatus == 0) & (currentStation == i) ):
-					# All stations off, including a previously-on station. Send idle notification, and reset station to 0
-					if ( (currentStation != 0) & (config["stations"]["notify"]["stop"] == "yes") ):
-						syslog.syslog("Station has gone idle: %s" % currentStation)
-						sendPushNotification("station_idle", currentStation)
-						currentStation = 0
-						
-				i = i + 1
+			for activity in statusChecks:
+				activity.check()
 
-			# Rain sensor status & notifications
-			if (config["rain"]["notify"] == "yes"):
-				rainSensor = getRainSensorStatus()
-				if (rainSensor == 1): # Rain sensor active
-					if (currentRainStatus == 0): # We showed no rain, now we have rain, send notification and set rain detected
-						currentRainStatus = 1
-						syslog.syslog("Rain sensor is now active")
-						sendPushNotification("rainSensor_active", 0)
-				elif ( (config["rain"]["notify"] == "yes") & (rainSensor == 0) ): # Rain sensor not active
-					if (currentRainStatus == 1): # We showed rain, now we have no rain. Send an all clear notification and clear the rain detected
-						currentRainStatus = 0
-						syslog.syslog("Rain sensor has cleared")
-						sendPushNotification("rainSensor_clear", 0)
+			# sleep 
+			sleep(POLL_SLEEP)
 
-			# Water level notifications
-			if (config["waterlevel"]["notify"] == "yes"):
-				waterLevel = getWaterLevel()
-				if (currentWaterLevel != waterLevel):
-					# New water level detected
-					currentWaterLevel = waterLevel
-					syslog.syslog("Water level has changed to: %s" % waterLevel)
-					sendPushNotification("waterLevel", waterLevel)
-					
-
-			sleep(5)
-	except:
-		syslog.syslog("OSPi push notification script stopped.")
+	except Exception as errEx:
+		syslog.syslog("OSPi push notification script stopped." + str(errEx))
 
 if __name__ == '__main__':
 	main()

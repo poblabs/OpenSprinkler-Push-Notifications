@@ -1,6 +1,13 @@
 ospi:
   password: "YOUR_OSPI_PASSWORD" # Needs to be hashed. View README for help
   port: "8080"
+programs:
+  notify:
+    start: "yes"
+    stop: "yes"
+  messages: # Bracket the begin and end of a program
+    start: "Program started"
+    stop: "Program ended" 
 stations: # Station activity notifications for start and stop. Valid options are "yes" or "no"
   notify:
     start: "yes"
@@ -24,6 +31,7 @@ push:
   pushover:
     userKey: "YOUR_PUSHOVER_USERKEY"
     appToken: "YOUR_PUSHOVER_APPTOKEN"
+    sound: "pushover"
   ifttt:
     eventName: "YOUR_IFTTT_EVENT_NAME"
     userKey: "YOUR_IFTTT_USER_KEY"
