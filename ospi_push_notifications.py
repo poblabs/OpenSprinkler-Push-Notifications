@@ -32,6 +32,8 @@
 				- Added generic "message" as default for the notification routine. 
 				- can now specify pushover "sound" in the config file.
 				- Added some comments and error handling output to help with debugging...etc.
+
+    	4/29/2016, Added logmsg() to simplify logging
 	"""
 
 import os, syslog, urllib2, json, requests, yaml
@@ -43,6 +45,9 @@ from time import sleep
 # How long to sleep for each iteration of the run loop
 POLL_SLEEP = 10
 
+def logmsg(msg):
+    print msg
+    syslog.syslog(syslog.LOG_INFO, 'OpenSprinkler Notification: %s' % msg)
 
 def sendEmail(message):
 	body = text.format(message)
@@ -68,7 +73,7 @@ def sendEmail(message):
 		s.sendmail(fromEmail, toEmail, msg)
 		s.quit()
 		
-	syslog.syslog("Email sent to %s. Exiting script due to error." % toEmail)
+	logmsg("Email sent to %s. Exiting script due to error." % toEmail)
 	exit() # Exit Python since we have encountered an error. Added this in due to multiple emails being sent.
 
 	
@@ -78,7 +83,7 @@ try:
 	with open(config_path, 'r') as file:
 		config = yaml.load(file)
 except:
-	syslog.syslog("Unable to load %s. Check the file exists and try again." % config_path)
+	logmsg("Unable to load %s. Check the file exists and try again." % config_path)
 
 # Setup variables from config file
 ospiPort = config["ospi"]["port"]
@@ -110,14 +115,14 @@ def getProgramStatus():
 		ospiProgramStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/jc?pw=" + ospiApiPasswordHash).read()
 	except:
 		error = "Unable to load the OSPi API URL for Program Status You might have a bad hashed password or the OSPi is not online."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 	
 	try:
 		data = json.loads(ospiProgramStatus)
 	except:
 		error = "Unable to parse OSPi Program Status JSON Output."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 
 	# Loop over the PS fields - if the first element is not 0, we have a program running (something is queued up )
@@ -140,7 +145,7 @@ def getProgramName(pid):
 			progsData = urllib2.urlopen("http://localhost:" + ospiPort + "/jp?pw=" + ospiApiPasswordHash).read()
 		except:
 			error = "Unable to load the OSPi API URL for Program Names."
-			syslog.syslog(error)
+			logmsg(error)
 			sendEmail(error)
 			return "Uknown"
 		
@@ -148,7 +153,7 @@ def getProgramName(pid):
 			progs = json.loads(progsData)
 		except:
 			error = "Unable to parse OSPi Program Data JSON Output."
-			syslog.syslog(error)
+			logmsg(error)
 			sendEmail(error)
 			return "Uknown"
 
@@ -164,14 +169,14 @@ def getStationStatus():
 		ospiStationStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/js?pw=" + ospiApiPasswordHash).read()
 	except:
 		error = "Unable to load the OSPi API URL for Station Status. You might have a bad hashed password or the OSPi is not online."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 	
 	try:
 		data = json.loads(ospiStationStatus)
 	except:
 		error = "Unable to parse OSPi Station Status JSON Output."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 		
 	stations = data["sn"]
@@ -184,14 +189,14 @@ def getStationName(id):
 		ospiStationName = urllib2.urlopen("http://localhost:" + ospiPort + "/jn?pw=" + ospiApiPasswordHash).read()
 	except:
 		error = "Unable to load the OSPi API URL for Station Names & Attributes. You might have a bad hashed password or the OSPi is not online."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 	
 	try:
 		data = json.loads(ospiStationName)
 	except:
 		error = "Unable to parse OSPi Station Names & Attributes JSON Output."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 	
 	# The list of stations starts at 0. We need to subtract 1 to get the right ID in the list
@@ -207,7 +212,7 @@ def getRainSensorStatus():
 		enabled = json.loads(ospiRainSensorEnabled)
 	except:
 		error = "Unable to load the OSPi API URL for Options. You might have a bad hashed password or the OSPi is not online."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 		
 	if ( enabled["urs"] == 1):
@@ -216,14 +221,14 @@ def getRainSensorStatus():
 			ospiRainSensorStatus = urllib2.urlopen("http://localhost:" + ospiPort + "/jc?pw=" + ospiApiPasswordHash).read()
 		except:
 			error = "Unable to load the OSPi API URL for Rain Sensor Status. You might have a bad hashed password or the OSPi is not online."
-			syslog.syslog(error)
+			logmsg(error)
 			sendEmail(error)
 		
 		try:
 			data = json.loads(ospiRainSensorStatus)
 		except:
 			error = "Unable to parse OSPi Rain Sensor Status JSON Output."
-			syslog.syslog(error)
+			logmsg(error)
 			sendEmail(error)
 			
 		rainSensor = data["rs"]
@@ -236,14 +241,14 @@ def getWaterLevel():
 		ospiWaterLevel = urllib2.urlopen("http://localhost:" + ospiPort + "/jo?pw=" + ospiApiPasswordHash).read()
 	except:
 		error = "Unable to load the OSPi API URL for Water Level. You might have a bad hashed password or the OSPi is not online."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 	
 	try:
 		data = json.loads(ospiWaterLevel)
 	except:
 		error = "Unable to parse OSPi Water Level JSON Output."
-		syslog.syslog(error)
+		logmsg(error)
 		sendEmail(error)
 
 	waterLevel = data["wl"]
@@ -281,7 +286,7 @@ def sendPushNotification(notifyType, notifyInfo):
 		ret = requests.post('http://api.instapush.im/post',
 						headers = headers,
 						data = payload)
-		syslog.syslog("Notification sent to %s. Message: %s. Return message: %s" % (pushService, event, ret))
+		logmsg("Notification sent to %s. Message: %s. Return message: %s" % (pushService, event, ret))
 		#print ret
 	
 	elif (pushService == "pushover"):
@@ -291,14 +296,14 @@ def sendPushNotification(notifyType, notifyInfo):
                 "sound": pushoverSound,
                 "message": event }
 		ret = requests.post("http://api.pushover.net/1/messages.json", data = payload)
-		syslog.syslog("Notification sent to %s. Message: %s. Return message: %s" % (pushService, event, ret))
+		logmsg("Notification sent to %s. Message: %s. Return message: %s" % (pushService, event, ret))
 		#print ret
 		
 	elif (pushService == "ifttt"):
 		url = "http://maker.ifttt.com/trigger/" + iftttEventName + "/with/key/" + iftttUserKey
 		payload = { 'value1': event }
 		ret = requests.post(url, data = payload)
-		syslog.syslog("Notification sent to %s. Message: %s. Return message %s" % (pushService, event, ret))
+		logmsg("Notification sent to %s. Message: %s. Return message %s" % (pushService, event, ret))
 		#print ret
 		
 #----------------------------------------------------
@@ -345,19 +350,19 @@ class stationStatus(Status):
 
 					# Zone change detected. Send notification that previous zone stopped, except if previous zone was 0
 					if ( (self.currentStation != 0) & self.notifyStop):
-						syslog.syslog("Station has gone idle: %s" % self.currentStation)
+						logmsg("Station has gone idle: %s" % self.currentStation)
 						sendPushNotification("station_idle", self.currentStation)
 					
 					self.currentStation = i
 					# New zone is active, send notification
 					if (self.notifyStart):
-						syslog.syslog("Station is now active: %s" % i)
+						logmsg("Station is now active: %s" % i)
 						sendPushNotification("station_active", i)
 
 			elif ( (zoneStatus == 0) & (self.currentStation == i) ):
 				# All stations off, including a previously-on station. Send idle notification, and reset station to 0
 				if (self.currentStation != 0) & (self.notifyStop ):
-					syslog.syslog("Station has gone idle: %s" % self.currentStation)
+					logmsg("Station has gone idle: %s" % self.currentStation)
 					sendPushNotification("station_idle", self.currentStation)
 					self.currentStation = 0
 					
@@ -388,11 +393,11 @@ class programStatus(Status):
 			if bStatus and self.notifyStart:
 				self.currentProgramName = getProgramName(pid)
 				txt = "Started " + self.currentProgramName + " Program"
-				syslog.syslog(txt)
+				logmsg(txt)
 				sendPushNotification(txt, None)
 			elif not bStatus and  self.notifyStop:
 				txt = "Ending " + self.currentProgramName + " Program"
-				syslog.syslog(txt)
+				logmsg(txt)
 				sendPushNotification(txt, None)		
 				self.currentProgramName = "Unknown"			
 
@@ -420,11 +425,11 @@ class rainSensorStatus(Status):
 
 		# Do we have rain now?
 		if (rainSensor == 1):
-			syslog.syslog("Rain sensor is now active")
+			logmsg("Rain sensor is now active")
 			sendPushNotification("rainSensor_active", 0)
 		else:
 			# No rain now
-			syslog.syslog("Rain sensor has cleared")
+			logmsg("Rain sensor has cleared")
 			sendPushNotification("rainSensor_clear", 0)
 
 		self.currentRainStatus = rainSensor
@@ -450,13 +455,13 @@ class waterLevelStatus(Status):
 		if (self.currentWaterLevel != waterLevel):
 			# New water level detected
 			self.currentWaterLevel = waterLevel
-			syslog.syslog("Water level has changed to: %s" % self.waterLevel)
+			logmsg("Water level has changed to: %s" % self.waterLevel)
 			sendPushNotification("waterLevel", self.waterLevel)
 
 #----------------------------------------------------
 # Main loop to check the status and send notification if necessary	
 def main():
-	syslog.syslog('OSPi push notification script started.')
+	logmsg('OSPi push notification script started.')
 	
 	# What checks do we need to make in the processing loop?
 	statusChecks = []
@@ -474,7 +479,7 @@ def main():
 
 	# if we have no checks, bail
 	if len(statusChecks) == 0:
-		syslog.syslog("No status checks specified in the config file. Exiting.")
+		logmsg("No status checks specified in the config file. Exiting.")
 		return
 
 	# Start the run loop
@@ -488,7 +493,7 @@ def main():
 			sleep(POLL_SLEEP)
 
 	except Exception as errEx:
-		syslog.syslog("OSPi push notification script stopped." + str(errEx))
+		logmsg("OSPi push notification script stopped." + str(errEx))
 
 if __name__ == '__main__':
 	main()
