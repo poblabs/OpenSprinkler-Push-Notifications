@@ -455,8 +455,8 @@ class waterLevelStatus(Status):
 		if (self.currentWaterLevel != waterLevel):
 			# New water level detected
 			self.currentWaterLevel = waterLevel
-			logmsg("Water level has changed to: %s" % self.waterLevel)
-			sendPushNotification("waterLevel", self.waterLevel)
+			logmsg("Water level has changed to: %s" % waterLevel)
+			sendPushNotification("waterLevel", waterLevel)
 
 #----------------------------------------------------
 # Main loop to check the status and send notification if necessary	
