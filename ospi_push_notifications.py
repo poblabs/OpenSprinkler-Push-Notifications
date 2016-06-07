@@ -34,6 +34,8 @@
 				- Added some comments and error handling output to help with debugging...etc.
 
     	4/29/2016, Added logmsg() to simplify logging
+    	
+    	6/7/2016, Fixed a waterLevel typo bug. Thanks @nathangraves @ github!
 	"""
 
 import os, syslog, urllib2, json, requests, yaml
